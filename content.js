@@ -1,86 +1,160 @@
-// Main extension logic
-(function () {
-  // Extension state
-  let isEnabled = true;
+// Global settings object
+let settings = {
+  "toggle-sidebar": true,
+  "toggle-comments": true,
+  "toggle-endscreen": true,
+  "toggle-notifications": true,
+  "toggle-homepage": true,
+};
 
-  // Create toggle button
-  function createToggleButton() {
-    const button = document.createElement("button");
-    button.textContent = isEnabled ? "Show Distractions" : "Hide Distractions";
-    button.className = "distraction-free-toggle";
-
-    button.addEventListener("click", () => {
-      isEnabled = !isEnabled;
-      button.textContent = isEnabled
-        ? "Show Distractions"
-        : "Hide Distractions";
-      toggleDistractionFreeMode(isEnabled);
-      saveState(isEnabled);
-    });
-
-    document.body.appendChild(button);
-    return button;
-  }
-
-  // Function to toggle distraction-free mode
-  function toggleDistractionFreeMode(enabled) {
-    document.body.classList.toggle("distraction-free-mode", enabled);
-
-    // Toggle CSS classes or styles directly
-    const elementsToHide = [
-      "#secondary", // Sidebar
-      "#comments", // Comments section
-      "ytd-rich-grid-renderer", // Homepage recommendations
-      ".ytp-endscreen-content", // Endscreen recommendations
-    ];
-
-    elementsToHide.forEach((selector) => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach((element) => {
-        element.style.display = enabled ? "none" : "";
+// Function to load settings from storage
+function loadSettings() {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(Object.keys(settings), function (result) {
+      // Update settings with stored values, keeping defaults for any missing values
+      Object.keys(settings).forEach((key) => {
+        if (result[key] !== undefined) {
+          settings[key] = result[key];
+        }
       });
+      resolve(settings);
     });
-  }
+  });
+}
 
-  // Save state to Chrome storage
-  function saveState(state) {
-    chrome.storage.sync.set({ distractionFreeEnabled: state });
-  }
+// Main function to remove distractions based on settings
+function removeDistractions() {
+  // Only apply if we're on a YouTube page
+  if (!window.location.hostname.includes("youtube.com")) return;
 
-  // Load saved state from Chrome storage
-  function loadState(callback) {
-    chrome.storage.sync.get("distractionFreeEnabled", (data) => {
-      isEnabled =
-        data.distractionFreeEnabled !== undefined
-          ? data.distractionFreeEnabled
-          : true;
-      callback(isEnabled);
-    });
-  }
-
-  // Initialize the extension
-  function init() {
-    loadState((enabled) => {
-      toggleDistractionFreeMode(enabled);
-      createToggleButton();
-    });
-  }
-
-  // Wait for the page to be fully loaded
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
-  }
-
-  // Handle YouTube's SPA navigation
-  let lastUrl = location.href;
-  new MutationObserver(() => {
-    if (location.href !== lastUrl) {
-      lastUrl = location.href;
-      setTimeout(() => {
-        toggleDistractionFreeMode(isEnabled);
-      }, 1000); // Delay to ensure YouTube's UI has updated
+  // Handle video page elements
+  if (window.location.pathname.includes("/watch")) {
+    // Hide sidebar recommendations
+    if (settings["toggle-sidebar"]) {
+      const sidebar = document.querySelector("#secondary");
+      if (sidebar) sidebar.style.display = "none";
+    } else {
+      const sidebar = document.querySelector("#secondary");
+      if (sidebar) sidebar.style.display = "";
     }
-  }).observe(document, { subtree: true, childList: true });
-})();
+
+    // Hide comments
+    if (settings["toggle-comments"]) {
+      const comments = document.querySelector("#comments");
+      if (comments) comments.style.display = "none";
+    } else {
+      const comments = document.querySelector("#comments");
+      if (comments) comments.style.display = "";
+    }
+
+    // Hide end screen suggestions
+    if (settings["toggle-endscreen"]) {
+      const endScreen = document.querySelector(".ytp-endscreen-content");
+      if (endScreen) endScreen.style.display = "none";
+    } else {
+      const endScreen = document.querySelector(".ytp-endscreen-content");
+      if (endScreen) endScreen.style.display = "";
+    }
+  }
+
+  // Handle general elements (present on all YouTube pages)
+  if (settings["toggle-notifications"]) {
+    const notifications = document.querySelectorAll(
+      ".ytd-notification-topbar-button-renderer"
+    );
+    notifications.forEach((notification) => {
+      notification.style.display = "none";
+    });
+  } else {
+    const notifications = document.querySelectorAll(
+      ".ytd-notification-topbar-button-renderer"
+    );
+    notifications.forEach((notification) => {
+      notification.style.display = "";
+    });
+  }
+
+  // Simplify homepage
+  if (settings["toggle-homepage"] && window.location.pathname === "/") {
+    const recommendations = document.querySelector(
+      'ytd-browse[page-subtype="home"]'
+    );
+    if (recommendations) {
+      const contentSections = recommendations.querySelectorAll(
+        "ytd-rich-grid-renderer"
+      );
+      contentSections.forEach((section) => {
+        section.style.display = "none";
+      });
+    }
+  } else if (window.location.pathname === "/") {
+    const recommendations = document.querySelector(
+      'ytd-browse[page-subtype="home"]'
+    );
+    if (recommendations) {
+      const contentSections = recommendations.querySelectorAll(
+        "ytd-rich-grid-renderer"
+      );
+      contentSections.forEach((section) => {
+        section.style.display = "";
+      });
+    }
+  }
+}
+
+// Initialize and set up observers
+async function initialize() {
+  // Load settings first
+  await loadSettings();
+
+  // Apply initial changes
+  removeDistractions();
+
+  // Set up DOM change observer
+  const observer = new MutationObserver((mutations) => {
+    let shouldUpdate = false;
+
+    for (const mutation of mutations) {
+      if (mutation.addedNodes.length || mutation.type === "attributes") {
+        shouldUpdate = true;
+        break;
+      }
+    }
+
+    if (shouldUpdate) {
+      removeDistractions();
+    }
+  });
+
+  // Start observing
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["style", "class"],
+  });
+
+  // Listen for YouTube SPA navigation
+  if (window.yt && window.yt.config_) {
+    document.addEventListener("yt-navigate-finish", function () {
+      removeDistractions();
+    });
+  }
+}
+
+// Listen for messages from popup
+chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
+  if (message.action === "updateSettings") {
+    // Update our local settings
+    Object.assign(settings, message.settings);
+
+    // Apply changes immediately
+    removeDistractions();
+
+    // Acknowledge
+    sendResponse({ status: "settings updated" });
+  }
+});
+
+// Start the extension
+initialize();

@@ -3,9 +3,6 @@
   "name": "Free Youtube Distraction",
   "version": "1.0",
   "description": "Make your YouTube experience more focused by hiding various UI elements",
-  "icons": {
-    "128": "icon128.png"
-  },
   "content_scripts": [
     {
       "matches": ["*://*.youtube.com/*"],

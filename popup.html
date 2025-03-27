@@ -1,131 +1,156 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <title>YouTube Distraction Remover</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YouTube Distraction Free</title>
     <style>
       body {
-        width: 280px;
-        padding: 12px;
         font-family: Arial, sans-serif;
-        background-color: #000000;
-        color: #ffffff;
+        width: 300px;
+        padding: 15px;
+        background-color: #f9f9f9;
       }
 
       h1 {
-        font-size: 16px;
+        text-align: center;
+        color: #cc0000;
+        font-size: 18px;
+        margin-top: 0;
         margin-bottom: 15px;
-        color: #ffffff;
       }
 
       .toggle-container {
-        margin-bottom: 8px;
         display: flex;
         align-items: center;
+        margin-bottom: 12px;
+        height: 40px; /* Fixed height for all rows */
       }
 
-      .toggle-container label {
-        margin-left: 8px;
-        flex-grow: 1;
+      .toggle-label {
+        flex: 1;
         font-size: 14px;
+        margin-right: 10px;
       }
 
-      .toggle {
+      .toggle-switch {
         position: relative;
         display: inline-block;
-        width: 30px;
-        height: 16px;
+        width: 50px; /* Fixed width for all toggles */
+        height: 24px; /* Fixed height for all toggles */
+        flex-shrink: 0; /* Prevents toggle from shrinking */
       }
 
-      .toggle input {
+      /* Hide default HTML checkbox */
+      .toggle-switch input {
         opacity: 0;
         width: 0;
         height: 0;
       }
 
-      .slider {
+      /* The slider */
+      .toggle-slider {
         position: absolute;
         cursor: pointer;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: #444;
-        transition: 0.3s;
-        border-radius: 16px;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 24px;
       }
 
-      .slider:before {
+      .toggle-slider:before {
         position: absolute;
         content: "";
-        height: 12px;
-        width: 12px;
-        left: 2px;
-        bottom: 2px;
+        height: 16px;
+        width: 16px;
+        left: 4px;
+        bottom: 4px;
         background-color: white;
-        transition: 0.3s;
+        transition: 0.4s;
         border-radius: 50%;
       }
 
-      input:checked + .slider {
+      input:checked + .toggle-slider {
         background-color: #2196f3;
       }
 
-      input:checked + .slider:before {
-        transform: translateX(14px);
+      input:checked + .toggle-slider:before {
+        transform: translateX(26px);
       }
 
       .footer {
         margin-top: 15px;
-        font-size: 11px;
-        color: #888;
         text-align: center;
+        font-size: 12px;
+        color: #666;
+      }
+
+      .footer a {
+        color: #0066cc;
+        text-decoration: none;
+      }
+
+      .footer a:hover {
+        text-decoration: underline;
       }
     </style>
   </head>
   <body>
-    <h1>YouTube Distraction Settings</h1>
+    <h1>YouTube Distraction Free</h1>
 
     <div class="toggle-container">
-      <label class="toggle">
-        <input type="checkbox" id="toggle-sidebar" checked />
-        <span class="slider"></span>
+      <span class="toggle-label">Hide Recommendations</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="hideRecommendations" />
+        <span class="toggle-slider"></span>
       </label>
-      <label for="toggle-sidebar">Hide Recommendations Sidebar</label>
     </div>
 
     <div class="toggle-container">
-      <label class="toggle">
-        <input type="checkbox" id="toggle-comments" checked />
-        <span class="slider"></span>
+      <span class="toggle-label">Hide Comments</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="hideComments" />
+        <span class="toggle-slider"></span>
       </label>
-      <label for="toggle-comments">Hide Comments Section</label>
     </div>
 
     <div class="toggle-container">
-      <label class="toggle">
-        <input type="checkbox" id="toggle-endscreen" checked />
-        <span class="slider"></span>
+      <span class="toggle-label">Hide Thumbnails</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="hideThumbnails" />
+        <span class="toggle-slider"></span>
       </label>
-      <label for="toggle-endscreen">Hide End Screen Suggestions</label>
     </div>
 
     <div class="toggle-container">
-      <label class="toggle">
-        <input type="checkbox" id="toggle-notifications" checked />
-        <span class="slider"></span>
+      <span class="toggle-label">Hide Shorts</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="hideShorts" />
+        <span class="toggle-slider"></span>
       </label>
-      <label for="toggle-notifications">Hide Notification Badge</label>
     </div>
 
     <div class="toggle-container">
-      <label class="toggle">
-        <input type="checkbox" id="toggle-homepage" checked />
-        <span class="slider"></span>
+      <span class="toggle-label">Hide Home Feed</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="hideHomeFeed" />
+        <span class="toggle-slider"></span>
       </label>
-      <label for="toggle-homepage">Simplify Homepage</label>
     </div>
 
-    <div class="footer">Changes apply immediately to open YouTube tabs</div>
+    <div class="footer">
+      <p>Free YouTube Distraction v1.0</p>
+      <p>
+        <a
+          href="https://github.com/kiarashSajadian/free-youtube-distraction"
+          target="_blank"
+          >GitHub Repository</a
+        >
+      </p>
+    </div>
 
     <script src="popup.js"></script>
   </body>

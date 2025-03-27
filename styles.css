@@ -1,0 +1,43 @@
+/* Hide recommended videos on the sidebar */
+ytd-watch-next-secondary-results-renderer {
+  display: none !important;
+}
+
+/* Hide comments section */
+#comments {
+  display: none !important;
+}
+
+/* Hide homepage recommendations */
+ytd-rich-grid-renderer {
+  display: none !important;
+}
+
+/* Hide endscreen recommendations */
+.ytp-endscreen-content {
+  display: none !important;
+}
+
+/* Custom styles to make the player more prominent */
+#player {
+  max-width: 100% !important;
+}
+
+/* Hide shorts button in the sidebar */
+[href="/shorts"] {
+  display: none !important;
+}
+
+/* Optional: You can add a toggle button style here if you implement one */
+.distraction-free-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  background: #f00;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+}

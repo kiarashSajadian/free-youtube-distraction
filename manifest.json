@@ -1,12 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "Distraction-Free YouTube",
+  "name": "Free Youtube Distraction",
   "version": "1.0",
-  "description": "Make YouTube less distracting by hiding various UI elements",
+  "description": "Make your YouTube experience more focused by hiding various UI elements",
   "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
+    "128": "icon128.png"
   },
   "content_scripts": [
     {

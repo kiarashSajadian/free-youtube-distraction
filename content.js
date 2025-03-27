@@ -1,164 +1,157 @@
-// Global settings object
-let settings = {
-  "toggle-sidebar": true,
-  "toggle-comments": true,
-  "toggle-endscreen": true,
-  "toggle-notifications": true,
-  "toggle-homepage": true,
+// YouTube Distraction Free Content Script
+
+// CSS selectors for different YouTube elements
+const selectors = {
+  hideRecommendations: [
+    "ytd-watch-next-secondary-results-renderer", // Video recommendations sidebar
+    ".ytp-ce-element", // End screen recommendations
+  ],
+  hideComments: [
+    "ytd-comments", // Comment section
+  ],
+  hideThumbnails: [
+    ".ytd-thumbnail:not(.ytd-video-preview)", // Thumbnails except in player
+    ".ytd-playlist-thumbnail", // Playlist thumbnails
+  ],
+  hideShorts: [
+    "ytd-rich-section-renderer", // Shorts section on home
+    "ytd-reel-shelf-renderer", // Another shorts element
+    "ytd-shorts", // Shorts in search results
+  ],
+  hideHomeFeed: [
+    "ytd-rich-grid-renderer", // Main home feed grid
+    'ytd-two-column-browse-results-renderer:not([page-subtype="channels"])', // Feed but not on channel pages
+  ],
 };
 
-// Function to load settings from storage
+// Settings state
+let settings = {};
+
+// Helper to log status
+function logStatus(message) {
+  console.log(`[YouTube Distraction Free] ${message}`);
+}
+
+// Function to load settings
 function loadSettings() {
   return new Promise((resolve) => {
-    chrome.storage.sync.get(Object.keys(settings), function (result) {
-      // Update settings with stored values, keeping defaults for any missing values
-      Object.keys(settings).forEach((key) => {
-        if (result[key] !== undefined) {
-          settings[key] = result[key];
-        }
-      });
-      resolve(settings);
+    // Get all possible settings
+    const allSettings = Object.keys(selectors);
+
+    chrome.storage.sync.get(allSettings, (items) => {
+      // If items is empty, use defaults (all features enabled)
+      if (Object.keys(items).length === 0) {
+        const defaultSettings = {};
+        allSettings.forEach((setting) => (defaultSettings[setting] = true));
+
+        // Save defaults to storage
+        chrome.storage.sync.set(defaultSettings, () => {
+          logStatus("Initialized default settings");
+          settings = defaultSettings;
+          resolve(settings);
+        });
+      } else {
+        logStatus("Loaded saved settings");
+        settings = items;
+        resolve(settings);
+      }
     });
   });
 }
 
-// Main function to remove distractions based on settings
-function removeDistractions() {
-  // Only apply if we're on a YouTube page
-  if (!window.location.hostname.includes("youtube.com")) return;
-
-  // Handle video page elements
-  if (window.location.pathname.includes("/watch")) {
-    // Hide sidebar recommendations
-    if (settings["toggle-sidebar"]) {
-      const sidebar = document.querySelector("#secondary");
-      if (sidebar) sidebar.style.display = "none";
-    } else {
-      const sidebar = document.querySelector("#secondary");
-      if (sidebar) sidebar.style.display = "";
-    }
-
-    // Hide comments
-    if (settings["toggle-comments"]) {
-      const comments = document.querySelector("#comments");
-      if (comments) comments.style.display = "none";
-    } else {
-      const comments = document.querySelector("#comments");
-      if (comments) comments.style.display = "";
-    }
-
-    // Hide end screen suggestions
-    if (settings["toggle-endscreen"]) {
-      const endScreen = document.querySelector(".ytp-endscreen-content");
-      if (endScreen) endScreen.style.display = "none";
-    } else {
-      const endScreen = document.querySelector(".ytp-endscreen-content");
-      if (endScreen) endScreen.style.display = "";
-    }
+// Apply settings to page
+function applySettings() {
+  // First remove any existing style element
+  const existingStyle = document.getElementById(
+    "youtube-distraction-free-styles"
+  );
+  if (existingStyle) {
+    existingStyle.remove();
   }
 
-  // Handle general elements (present on all YouTube pages)
-  if (settings["toggle-notifications"]) {
-    const notifications = document.querySelectorAll(
-      ".ytd-notification-topbar-button-renderer"
-    );
-    notifications.forEach((notification) => {
-      notification.style.display = "none";
-    });
-  } else {
-    const notifications = document.querySelectorAll(
-      ".ytd-notification-topbar-button-renderer"
-    );
-    notifications.forEach((notification) => {
-      notification.style.display = "";
-    });
-  }
+  // Create new style element
+  const style = document.createElement("style");
+  style.id = "youtube-distraction-free-styles";
 
-  // Simplify homepage
-  if (settings["toggle-homepage"] && window.location.pathname === "/") {
-    const recommendations = document.querySelector(
-      'ytd-browse[page-subtype="home"]'
-    );
-    if (recommendations) {
-      const contentSections = recommendations.querySelectorAll(
-        "ytd-rich-grid-renderer"
-      );
-      contentSections.forEach((section) => {
-        section.style.display = "none";
+  // Build CSS based on current settings
+  let css = "";
+
+  Object.keys(selectors).forEach((setting) => {
+    // If setting is enabled (true), add CSS to hide elements
+    if (settings[setting] === true) {
+      selectors[setting].forEach((selector) => {
+        css += `${selector} { display: none !important; }\n`;
       });
+      logStatus(`Applied: ${setting}`);
+    } else {
+      logStatus(`Not applied: ${setting}`);
     }
-  } else if (window.location.pathname === "/") {
-    const recommendations = document.querySelector(
-      'ytd-browse[page-subtype="home"]'
-    );
-    if (recommendations) {
-      const contentSections = recommendations.querySelectorAll(
-        "ytd-rich-grid-renderer"
-      );
-      contentSections.forEach((section) => {
-        section.style.display = "";
-      });
-    }
-  }
+  });
+
+  // Add the CSS to the style element
+  style.textContent = css;
+
+  // Add style to document
+  document.head.appendChild(style);
+  logStatus("Applied styles to page");
 }
 
-// Initialize and set up observers
+// Initialize the extension
 async function initialize() {
-  // Load settings first
+  // Load settings
   await loadSettings();
 
-  // Apply initial changes
-  removeDistractions();
+  // Apply settings
+  applySettings();
 
-  // Set up DOM change observer
-  const observer = new MutationObserver((mutations) => {
-    let shouldUpdate = false;
-
-    for (const mutation of mutations) {
-      if (mutation.addedNodes.length || mutation.type === "attributes") {
-        shouldUpdate = true;
-        break;
-      }
-    }
-
-    if (shouldUpdate) {
-      removeDistractions();
-    }
+  // Watch for DOM changes to reapply settings (for dynamic content)
+  const observer = new MutationObserver(() => {
+    applySettings();
   });
 
   // Start observing
   observer.observe(document.body, {
     childList: true,
     subtree: true,
-    attributes: true,
-    attributeFilter: ["style", "class"],
   });
 
-  // Listen for YouTube SPA navigation
-  if (window.yt && window.yt.config_) {
-    document.addEventListener("yt-navigate-finish", function () {
-      removeDistractions();
-    });
-  }
+  logStatus("Initialized extension and watching for DOM changes");
 }
 
 // Listen for messages from popup
-chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-  if (message.action === "updateSettings") {
-    // Update our local settings
-    Object.assign(settings, message.settings);
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Handle settings updates
+  if (message.type === "settingsUpdated") {
+    logStatus(`Received setting update: ${message.setting} = ${message.value}`);
 
-    // Apply changes immediately
-    removeDistractions();
+    // Update our settings object
+    settings[message.setting] = message.value;
 
-    // Acknowledge - make sure to always send a response
-    sendResponse({ status: "settings updated" });
+    // Reapply settings
+    applySettings();
+
+    // No async response needed
+    sendResponse({ success: true });
+    return false;
   }
 
-  // Return true to indicate we'll send a response asynchronously
-  // This keeps the message channel open
-  return true;
+  // Handle settings reset
+  if (message.type === "settingsReset") {
+    logStatus("Received settings reset");
+
+    // Update all settings
+    settings = message.settings;
+
+    // Reapply settings
+    applySettings();
+
+    // No async response needed
+    sendResponse({ success: true });
+    return false;
+  }
+
+  return false;
 });
 
-// Start the extension
+// Run the extension
 initialize();

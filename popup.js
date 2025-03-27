@@ -1,6 +1,6 @@
 // Wait for the DOM to be fully loaded
 document.addEventListener("DOMContentLoaded", function () {
-  // Get all toggle elements
+  // Define all toggle elements
   const toggles = [
     "hideRecommendations",
     "hideComments",
@@ -9,13 +9,23 @@ document.addEventListener("DOMContentLoaded", function () {
     "hideHomeFeed",
   ];
 
-  // Load saved settings
+  // Debug helper
+  function logStatus(message) {
+    console.log(`[YouTube Distraction Free] ${message}`);
+  }
+
+  // Load saved settings from storage
   chrome.storage.sync.get(toggles, function (items) {
+    logStatus("Loading saved settings");
+    console.log("Saved settings:", items);
+
     // Apply saved settings to toggle checkboxes
     toggles.forEach(function (toggle) {
       const element = document.getElementById(toggle);
       if (element) {
-        element.checked = items[toggle] === true;
+        // Default to checked if setting doesn't exist yet
+        element.checked = items[toggle] !== false;
+        logStatus(`Setting ${toggle} to ${element.checked}`);
       } else {
         console.warn(`Element with ID "${toggle}" not found`);
       }
@@ -30,19 +40,24 @@ document.addEventListener("DOMContentLoaded", function () {
         const setting = {};
         setting[toggle] = this.checked;
 
+        logStatus(`Toggle changed: ${toggle} = ${this.checked}`);
+
         // Save to Chrome storage
         chrome.storage.sync.set(setting, function () {
-          // Send message to content script without expecting a response
+          logStatus(`Saved setting: ${toggle} = ${setting[toggle]}`);
+
+          // Send message to content script
           chrome.tabs.query(
             { active: true, currentWindow: true },
             function (tabs) {
               if (tabs[0] && tabs[0].id) {
                 try {
-                  // Don't expect a response - don't use sendMessage with a callback
                   chrome.tabs.sendMessage(tabs[0].id, {
                     type: "settingsUpdated",
-                    settings: setting,
+                    setting: toggle,
+                    value: setting[toggle],
                   });
+                  logStatus(`Sent update message for ${toggle}`);
                 } catch (error) {
                   console.error("Error sending message:", error);
                 }
@@ -53,20 +68,40 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
   });
-});
 
-// If you need to handle incoming messages in the popup
-chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-  // Important: Always call sendResponse right away or return false
-  // Don't return true unless you call sendResponse asynchronously
+  // Add a reset button functionality if needed
+  const resetButton = document.getElementById("resetSettings");
+  if (resetButton) {
+    resetButton.addEventListener("click", function () {
+      // Create default settings (all enabled)
+      const defaultSettings = {};
+      toggles.forEach((toggle) => (defaultSettings[toggle] = true));
 
-  if (message.type === "someMessageType") {
-    // Handle the message synchronously
-    sendResponse({ success: true });
-    // Return false to indicate synchronous response
-    return false;
+      // Save default settings
+      chrome.storage.sync.set(defaultSettings, function () {
+        logStatus("Reset all settings to defaults");
+
+        // Update UI
+        toggles.forEach(function (toggle) {
+          const element = document.getElementById(toggle);
+          if (element) {
+            element.checked = true;
+          }
+        });
+
+        // Notify content script
+        chrome.tabs.query(
+          { active: true, currentWindow: true },
+          function (tabs) {
+            if (tabs[0] && tabs[0].id) {
+              chrome.tabs.sendMessage(tabs[0].id, {
+                type: "settingsReset",
+                settings: defaultSettings,
+              });
+            }
+          }
+        );
+      });
+    });
   }
-
-  // Always return false if not handling asynchronously
-  return false;
 });

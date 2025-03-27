@@ -1,52 +1,53 @@
+// Wait for the DOM to be fully loaded
 document.addEventListener("DOMContentLoaded", function () {
-  // Define the distraction elements we can toggle
-  const toggleOptions = [
-    "toggle-sidebar",
-    "toggle-comments",
-    "toggle-endscreen",
-    "toggle-notifications",
-    "toggle-homepage",
+  // Get all toggle elements
+  const toggles = [
+    "hideRecommendations",
+    "hideComments",
+    "hideThumbnails",
+    "hideShorts",
+    "hideHomeFeed",
   ];
 
-  // Load saved preferences
-  chrome.storage.sync.get(toggleOptions, function (result) {
-    // Set checkboxes based on saved preferences, defaulting to checked if not set
-    toggleOptions.forEach((option) => {
-      const checkbox = document.getElementById(option);
-      // If preference exists, use it; otherwise default to checked (true)
-      checkbox.checked = result[option] !== undefined ? result[option] : true;
+  // Load saved settings
+  chrome.storage.sync.get(toggles, function (items) {
+    // Apply saved settings to toggle checkboxes
+    toggles.forEach(function (toggle) {
+      const element = document.getElementById(toggle);
+      // Add null check to prevent errors
+      if (element) {
+        element.checked = items[toggle] === true;
+      } else {
+        console.warn(`Element with ID "${toggle}" not found`);
+      }
+    });
+  });
 
-      // Add change listener to save preferences
-      checkbox.addEventListener("change", function () {
+  // Save settings when toggles change
+  toggles.forEach(function (toggle) {
+    const element = document.getElementById(toggle);
+    // Add null check to prevent errors
+    if (element) {
+      element.addEventListener("change", function () {
         const setting = {};
-        setting[option] = checkbox.checked;
+        setting[toggle] = this.checked;
 
         // Save to Chrome storage
-        chrome.storage.sync.set(setting);
-
-        // Send message to content script to update without reload
-        chrome.tabs.query({ url: "*://*.youtube.com/*" }, function (tabs) {
-          tabs.forEach((tab) => {
-            chrome.tabs.sendMessage(
-              tab.id,
-              {
-                action: "updateSettings",
-                settings: { [option]: checkbox.checked },
-              },
-              (response) => {
-                // Handle error silently - this happens when tab doesn't have content script
-                const lastError = chrome.runtime.lastError;
-                if (lastError) {
-                  console.log(
-                    `Message to tab ${tab.id} failed: ${lastError.message}`
-                  );
-                  // This is expected for tabs without our content script loaded
-                }
+        chrome.storage.sync.set(setting, function () {
+          // Send message to content script to update without refreshing
+          chrome.tabs.query(
+            { active: true, currentWindow: true },
+            function (tabs) {
+              if (tabs[0] && tabs[0].id) {
+                chrome.tabs.sendMessage(tabs[0].id, {
+                  type: "settingsUpdated",
+                  settings: setting,
+                });
               }
-            );
-          });
+            }
+          );
         });
       });
-    });
+    }
   });
 });

@@ -3,18 +3,33 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Free YouTube Distraction</title>
+    <title>YouTube Distraction Free</title>
     <style>
+      :root {
+        /* Color Variables */
+        --primary-color: #2196f3; /* Blue for active toggles */
+        --primary-text: #ffffff; /* Main text color */
+        --secondary-text: #878787; /* Footer text color */
+        --bg-color: #000000; /* Background color */
+        --header-color: #cc0000; /* YouTube red for header */
+        --toggle-bg: #cccccc; /* Inactive toggle background */
+        --toggle-handle: #ffffff; /* Toggle handle color */
+        --link-color: #0066cc; /* Link color */
+        --hover-color: #004499; /* Link hover color */
+        --border-radius: 24px; /* Border radius for toggles */
+      }
+
       body {
         font-family: Arial, sans-serif;
         width: 300px;
         padding: 15px;
-        background-color: #434343;
+        background-color: var(--bg-color);
+        color: var(--primary-text);
       }
 
       h1 {
         text-align: center;
-        color: #cc0000;
+        color: var(--header-color);
         font-size: 18px;
         margin-top: 0;
         margin-bottom: 15px;
@@ -56,9 +71,9 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: #ccc;
+        background-color: var(--toggle-bg);
         transition: 0.4s;
-        border-radius: 24px;
+        border-radius: var(--border-radius);
       }
 
       .toggle-slider:before {
@@ -68,13 +83,13 @@
         width: 16px;
         left: 4px;
         bottom: 4px;
-        background-color: white;
+        background-color: var(--toggle-handle);
         transition: 0.4s;
         border-radius: 50%;
       }
 
       input:checked + .toggle-slider {
-        background-color: #2196f3;
+        background-color: var(--primary-color);
       }
 
       input:checked + .toggle-slider:before {
@@ -85,16 +100,17 @@
         margin-top: 15px;
         text-align: center;
         font-size: 12px;
-        color: #ffffff;
+        color: var(--secondary-text);
       }
 
       .footer a {
-        color: #0066cc;
+        color: var(--link-color);
         text-decoration: none;
       }
 
       .footer a:hover {
         text-decoration: underline;
+        color: var(--hover-color);
       }
     </style>
   </head>

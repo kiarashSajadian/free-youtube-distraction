@@ -27,10 +27,23 @@ document.addEventListener("DOMContentLoaded", function () {
         // Send message to content script to update without reload
         chrome.tabs.query({ url: "*://*.youtube.com/*" }, function (tabs) {
           tabs.forEach((tab) => {
-            chrome.tabs.sendMessage(tab.id, {
-              action: "updateSettings",
-              settings: { [option]: checkbox.checked },
-            });
+            chrome.tabs.sendMessage(
+              tab.id,
+              {
+                action: "updateSettings",
+                settings: { [option]: checkbox.checked },
+              },
+              (response) => {
+                // Handle error silently - this happens when tab doesn't have content script
+                const lastError = chrome.runtime.lastError;
+                if (lastError) {
+                  console.log(
+                    `Message to tab ${tab.id} failed: ${lastError.message}`
+                  );
+                  // This is expected for tabs without our content script loaded
+                }
+              }
+            );
           });
         });
       });

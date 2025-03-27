@@ -151,9 +151,13 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     // Apply changes immediately
     removeDistractions();
 
-    // Acknowledge
+    // Acknowledge - make sure to always send a response
     sendResponse({ status: "settings updated" });
   }
+
+  // Return true to indicate we'll send a response asynchronously
+  // This keeps the message channel open
+  return true;
 });
 
 // Start the extension
